@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SubnetLE - Daily CCNA Subnetting Challenge</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -308,6 +310,140 @@
             font-family: 'Courier New', monospace;
         }
 
+        .nickname-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        .nickname-modal.show {
+            display: flex;
+        }
+
+        .nickname-content {
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .nickname-content h2 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+
+        .nickname-content p {
+            color: #888;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .nickname-content input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .nickname-content input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        .leaderboard-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .leaderboard-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .leaderboard-section h3:after {
+            content: '▼';
+            font-size: 0.7rem;
+        }
+
+        .leaderboard-section.collapsed h3:after {
+            content: '▶';
+        }
+
+        .leaderboard-section.collapsed .leaderboard-content {
+            display: none;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+            font-size: 0.9rem;
+        }
+
+        .leaderboard-entry:last-child {
+            border-bottom: none;
+        }
+
+        .leaderboard-entry .name {
+            color: #eee;
+        }
+
+        .leaderboard-entry .score {
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .leaderboard-entry.current-user .name {
+            color: #ffd700;
+        }
+
+        .leaderboard-empty {
+            color: #666;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .user-display {
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+
+        .user-display span {
+            color: #ffd700;
+        }
+
+        .user-display a {
+            color: #00d4ff;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
         @media (max-width: 500px) {
             h1 {
                 font-size: 2rem;
@@ -329,6 +465,11 @@
             <h1>SubnetLE</h1>
             <p class="subtitle">Daily CCNA Subnetting Challenge</p>
         </header>
+
+        <div class="user-display" id="userDisplay" style="display: none;">
+            Playing as: <span id="currentNickname"></span>
+            <a onclick="changeNickname()">change</a>
+        </div>
 
         <div class="challenge-box">
             <div class="challenge-type" id="challengeType">Today's Challenge</div>
@@ -364,6 +505,22 @@
         </div>
 
         <div class="countdown" id="countdown"></div>
+
+        <div class="leaderboard-section" id="leaderboardSection">
+            <h3 onclick="toggleLeaderboard()">Today's Leaderboard</h3>
+            <div class="leaderboard-content" id="leaderboardContent">
+                <div class="leaderboard-empty">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nickname-modal" id="nicknameModal">
+        <div class="nickname-content">
+            <h2>Welcome to SubnetLE!</h2>
+            <p>Enter a nickname to track your scores and compete with your team.</p>
+            <input type="text" id="nicknameInput" placeholder="Your nickname" maxlength="20" autocomplete="off">
+            <button onclick="submitNickname()">Join</button>
+        </div>
     </div>
 
     <div class="result-modal" id="resultModal">
@@ -379,6 +536,175 @@
     </div>
 
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBS2NivvSk478kiWKeUxSz8FzFMDLoRsWg",
+            authDomain: "subnetle.firebaseapp.com",
+            databaseURL: "https://subnetle-default-rtdb.firebaseio.com",
+            projectId: "subnetle",
+            storageBucket: "subnetle.firebasestorage.app",
+            messagingSenderId: "398068301456",
+            appId: "1:398068301456:web:b114e880cf4dafad21e215"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Nickname management
+        let currentNickname = localStorage.getItem('subnetle_nickname') || null;
+
+        function checkNickname() {
+            if (!currentNickname) {
+                document.getElementById('nicknameModal').classList.add('show');
+            } else {
+                showUserDisplay();
+                loadLeaderboard();
+            }
+        }
+
+        function submitNickname() {
+            const input = document.getElementById('nicknameInput');
+            const nickname = input.value.trim();
+
+            if (nickname.length < 2) {
+                input.style.borderColor = '#ff5252';
+                return;
+            }
+
+            currentNickname = nickname;
+            localStorage.setItem('subnetle_nickname', nickname);
+            document.getElementById('nicknameModal').classList.remove('show');
+            showUserDisplay();
+
+            // Register user in Firebase
+            const userRef = db.ref('users/' + sanitizeKey(nickname));
+            userRef.once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    userRef.set({
+                        nickname: nickname,
+                        totalPlayed: 0,
+                        totalWon: 0,
+                        currentStreak: 0,
+                        maxStreak: 0,
+                        joinedAt: Date.now()
+                    });
+                }
+            });
+
+            loadLeaderboard();
+        }
+
+        function changeNickname() {
+            document.getElementById('nicknameInput').value = currentNickname || '';
+            document.getElementById('nicknameModal').classList.add('show');
+        }
+
+        function showUserDisplay() {
+            document.getElementById('currentNickname').textContent = currentNickname;
+            document.getElementById('userDisplay').style.display = 'block';
+        }
+
+        function sanitizeKey(str) {
+            // Firebase keys can't contain . $ # [ ] /
+            return str.replace(/[.$#\[\]\/]/g, '_');
+        }
+
+        // Leaderboard functions
+        function toggleLeaderboard() {
+            document.getElementById('leaderboardSection').classList.toggle('collapsed');
+        }
+
+        function loadLeaderboard() {
+            const today = getTodaySeed().toString();
+            const leaderboardRef = db.ref('daily/' + today);
+
+            leaderboardRef.orderByChild('attempts').once('value').then(snapshot => {
+                const content = document.getElementById('leaderboardContent');
+
+                if (!snapshot.exists()) {
+                    content.innerHTML = '<div class="leaderboard-empty">No completions yet today. Be the first!</div>';
+                    return;
+                }
+
+                const entries = [];
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data.won) {
+                        entries.push({
+                            nickname: data.nickname,
+                            attempts: data.attempts,
+                            timestamp: data.timestamp
+                        });
+                    }
+                });
+
+                // Sort by attempts (fewer is better), then by timestamp (earlier is better)
+                entries.sort((a, b) => {
+                    if (a.attempts !== b.attempts) return a.attempts - b.attempts;
+                    return a.timestamp - b.timestamp;
+                });
+
+                if (entries.length === 0) {
+                    content.innerHTML = '<div class="leaderboard-empty">No winners yet today. Be the first!</div>';
+                    return;
+                }
+
+                content.innerHTML = entries.map((entry, index) => {
+                    const isCurrentUser = entry.nickname === currentNickname;
+                    const medal = index === 0 ? '🥇 ' : index === 1 ? '🥈 ' : index === 2 ? '🥉 ' : '';
+                    return `
+                        <div class="leaderboard-entry ${isCurrentUser ? 'current-user' : ''}">
+                            <span class="name">${medal}${entry.nickname}</span>
+                            <span class="score">${entry.attempts}/6</span>
+                        </div>
+                    `;
+                }).join('');
+            });
+        }
+
+        function submitScoreToFirebase() {
+            if (!currentNickname) return;
+
+            const today = getTodaySeed().toString();
+            const sanitizedNickname = sanitizeKey(currentNickname);
+
+            // Submit daily score
+            db.ref('daily/' + today + '/' + sanitizedNickname).set({
+                nickname: currentNickname,
+                attempts: gameState.guesses.length,
+                won: gameState.won,
+                timestamp: Date.now()
+            });
+
+            // Update user stats
+            const userRef = db.ref('users/' + sanitizedNickname);
+            userRef.once('value').then(snapshot => {
+                const userData = snapshot.val() || {
+                    totalPlayed: 0,
+                    totalWon: 0,
+                    currentStreak: 0,
+                    maxStreak: 0
+                };
+
+                userData.totalPlayed++;
+                if (gameState.won) {
+                    userData.totalWon++;
+                    userData.currentStreak++;
+                    userData.maxStreak = Math.max(userData.maxStreak, userData.currentStreak);
+                } else {
+                    userData.currentStreak = 0;
+                }
+                userData.lastPlayed = Date.now();
+                userData.nickname = currentNickname;
+
+                userRef.set(userData);
+            });
+
+            // Refresh leaderboard
+            setTimeout(loadLeaderboard, 500);
+        }
+
         // Game configuration
         const MAX_ATTEMPTS = 6;
 
@@ -805,8 +1131,18 @@
                 }
             });
 
+            // Set up nickname input enter key
+            document.getElementById('nicknameInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    submitNickname();
+                }
+            });
+
             // Update countdown every second
             setInterval(updateCountdown, 1000);
+
+            // Check nickname and load leaderboard
+            checkNickname();
         }
 
         // Render challenge
@@ -894,6 +1230,13 @@
                     stats.currentStreak = 0;
                 }
                 saveState();
+
+                // Submit score to Firebase
+                if (!gameState.scoreSubmitted) {
+                    gameState.scoreSubmitted = true;
+                    saveState();
+                    submitScoreToFirebase();
+                }
 
                 setTimeout(showResult, 500);
             }
