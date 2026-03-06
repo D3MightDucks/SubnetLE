@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SubnetLE - Daily CCNA Subnetting Challenge</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #00d4ff;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .subtitle {
+            color: #888;
+            margin-top: 5px;
+            font-size: 0.9rem;
+        }
+
+        .challenge-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .challenge-type {
+            color: #00d4ff;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .challenge-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            color: #ffd700;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+
+        .input-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            text-align: center;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        input[type="text"]:disabled {
+            opacity: 0.5;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            background: #00d4ff;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #00b8e6;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .guesses {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .guess-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid #444;
+        }
+
+        .guess-row.correct {
+            border-left-color: #00c853;
+            background: rgba(0, 200, 83, 0.1);
+        }
+
+        .guess-row.close {
+            border-left-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .guess-row.wrong {
+            border-left-color: #ff5252;
+            background: rgba(255, 82, 82, 0.1);
+        }
+
+        .guess-value {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            min-width: 140px;
+        }
+
+        .guess-hint {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .attempts-left {
+            text-align: center;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .result-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .result-modal.show {
+            display: flex;
+        }
+
+        .result-content {
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .result-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .result-title.win {
+            color: #00c853;
+        }
+
+        .result-title.lose {
+            color: #ff5252;
+        }
+
+        .result-answer {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .share-text {
+            background: #0a0a15;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-line;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .btn-share {
+            background: #00c853;
+            margin-top: 10px;
+        }
+
+        .btn-close {
+            background: #666;
+            margin-left: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .info-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .info-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .info-section p {
+            color: #888;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .hint-table {
+            width: 100%;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .hint-table td {
+            padding: 5px 10px;
+        }
+
+        .hint-table .icon {
+            font-size: 1.2rem;
+        }
+
+        .countdown {
+            text-align: center;
+            color: #888;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+
+        .countdown span {
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+        }
+
+        @media (max-width: 500px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .input-section {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SubnetLE</h1>
+            <p class="subtitle">Daily CCNA Subnetting Challenge</p>
+        </header>
+
+        <div class="challenge-box">
+            <div class="challenge-type" id="challengeType">Today's Challenge</div>
+            <p class="challenge-text" id="challengeText">Loading...</p>
+        </div>
+
+        <div class="input-section">
+            <input type="text" id="guessInput" placeholder="Enter your answer" autocomplete="off">
+            <button id="submitBtn" onclick="submitGuess()">Submit</button>
+        </div>
+
+        <div class="attempts-left" id="attemptsLeft">6 attempts remaining</div>
+
+        <div class="guesses" id="guessesList"></div>
+
+        <div class="info-section">
+            <h3>How to Play</h3>
+            <p>Solve the daily subnetting challenge in 6 attempts or fewer. Each guess gives you a hint to help narrow down the answer.</p>
+            <table class="hint-table">
+                <tr>
+                    <td class="icon" style="color: #00c853;">●</td>
+                    <td>Correct answer!</td>
+                </tr>
+                <tr>
+                    <td class="icon" style="color: #ffd700;">●</td>
+                    <td>Close - right direction</td>
+                </tr>
+                <tr>
+                    <td class="icon" style="color: #ff5252;">●</td>
+                    <td>Wrong - try again</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="countdown" id="countdown"></div>
+    </div>
+
+    <div class="result-modal" id="resultModal">
+        <div class="result-content">
+            <h2 class="result-title" id="resultTitle">Result</h2>
+            <p id="resultMessage"></p>
+            <div class="result-answer" id="resultAnswer"></div>
+            <div class="stats" id="statsDisplay"></div>
+            <div class="share-text" id="shareText"></div>
+            <button class="btn-share" onclick="copyShare()">Copy Results</button>
+            <button class="btn-close" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Game configuration
+        const MAX_ATTEMPTS = 6;
+
+        // Challenge types for variety
+        const CHALLENGE_TYPES = [
+            'FIND_MASK_FOR_HOSTS',
+            'FIND_NETWORK_ADDRESS',
+            'FIND_BROADCAST_ADDRESS',
+            'FIND_USABLE_HOSTS',
+            'FIND_MASK_FOR_SUBNETS'
+        ];
+
+        // Seeded random number generator
+        function seededRandom(seed) {
+            const x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // Get today's date seed
+        function getTodaySeed() {
+            const today = new Date();
+            return today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+        }
+
+        // Generate daily challenge
+        function generateChallenge(seed) {
+            const rand = (max) => Math.floor(seededRandom(seed++) * max);
+
+            const challengeTypeIndex = rand(CHALLENGE_TYPES.length);
+            const challengeType = CHALLENGE_TYPES[challengeTypeIndex];
+
+            let challenge = { type: challengeType, seed: seed };
+
+            switch (challengeType) {
+                case 'FIND_MASK_FOR_HOSTS': {
+                    // Need X hosts, find the subnet mask
+                    const hostOptions = [6, 14, 30, 62, 126, 254, 510, 1022, 2046];
+                    const targetHosts = hostOptions[rand(hostOptions.length)];
+                    const baseOctets = [10, 172, 192];
+                    const firstOctet = baseOctets[rand(baseOctets.length)];
+
+                    let ip;
+                    if (firstOctet === 10) {
+                        ip = `10.${rand(256)}.${rand(256)}.0`;
+                    } else if (firstOctet === 172) {
+                        ip = `172.${16 + rand(16)}.${rand(256)}.0`;
+                    } else {
+                        ip = `192.168.${rand(256)}.0`;
+                    }
+
+                    // Calculate correct CIDR
+                    const bitsNeeded = Math.ceil(Math.log2(targetHosts + 2));
+                    const cidr = 32 - bitsNeeded;
+                    const actualHosts = Math.pow(2, bitsNeeded) - 2;
+
+                    challenge.ip = ip;
+                    challenge.requiredHosts = targetHosts;
+                    challenge.answer = `/${cidr}`;
+                    challenge.answerDecimal = cidrToDecimal(cidr);
+                    challenge.actualHosts = actualHosts;
+                    challenge.text = `Network: <span class="highlight">${ip}</span><br><br>You need to support <span class="highlight">${targetHosts} hosts</span> per subnet.<br><br>What subnet mask should you use? (e.g., /24 or 255.255.255.0)`;
+                    challenge.typeLabel = 'Find the Subnet Mask';
+                    break;
+                }
+
+                case 'FIND_NETWORK_ADDRESS': {
+                    // Given IP and mask, find network address
+                    const cidrs = [24, 25, 26, 27, 28];
+                    const cidr = cidrs[rand(cidrs.length)];
+                    const hostBits = 32 - cidr;
+                    const maxHost = Math.pow(2, hostBits) - 1;
+
+                    const firstOctet = [10, 172, 192][rand(3)];
+                    let ip, networkAddr;
+
+                    if (cidr >= 24) {
+                        const lastOctet = 1 + rand(maxHost - 1); // Avoid .0 and broadcast
+                        if (firstOctet === 10) {
+                            ip = `10.${rand(256)}.${rand(256)}.${lastOctet}`;
+                        } else if (firstOctet === 172) {
+                            ip = `172.${16 + rand(16)}.${rand(256)}.${lastOctet}`;
+                        } else {
+                            ip = `192.168.${rand(256)}.${lastOctet}`;
+                        }
+
+                        const parts = ip.split('.').map(Number);
+                        const blockSize = Math.pow(2, hostBits);
+                        const networkLastOctet = Math.floor(parts[3] / blockSize) * blockSize;
+                        networkAddr = `${parts[0]}.${parts[1]}.${parts[2]}.${networkLastOctet}`;
+                    } else {
+                        ip = `192.168.${rand(256)}.${rand(256)}`;
+                        const parts = ip.split('.').map(Number);
+                        const blockSize = Math.pow(2, hostBits - 8);
+                        const networkThirdOctet = Math.floor(parts[2] / blockSize) * blockSize;
+                        networkAddr = `${parts[0]}.${parts[1]}.${networkThirdOctet}.0`;
+                    }
+
+                    challenge.ip = ip;
+                    challenge.cidr = cidr;
+                    challenge.answer = networkAddr;
+                    challenge.text = `IP Address: <span class="highlight">${ip}/${cidr}</span><br><br>What is the <span class="highlight">network address</span>?`;
+                    challenge.typeLabel = 'Find the Network Address';
+                    break;
+                }
+
+                case 'FIND_BROADCAST_ADDRESS': {
+                    // Given IP and mask, find broadcast address
+                    const cidrs = [24, 25, 26, 27, 28];
+                    const cidr = cidrs[rand(cidrs.length)];
+                    const hostBits = 32 - cidr;
+                    const maxHost = Math.pow(2, hostBits) - 1;
+
+                    const lastOctet = rand(maxHost);
+                    const ip = `192.168.${rand(256)}.${lastOctet}`;
+
+                    const parts = ip.split('.').map(Number);
+                    const blockSize = Math.pow(2, hostBits);
+                    const networkLastOctet = Math.floor(parts[3] / blockSize) * blockSize;
+                    const broadcastLastOctet = networkLastOctet + blockSize - 1;
+                    const broadcastAddr = `${parts[0]}.${parts[1]}.${parts[2]}.${broadcastLastOctet}`;
+
+                    challenge.ip = ip;
+                    challenge.cidr = cidr;
+                    challenge.answer = broadcastAddr;
+                    challenge.text = `IP Address: <span class="highlight">${ip}/${cidr}</span><br><br>What is the <span class="highlight">broadcast address</span>?`;
+                    challenge.typeLabel = 'Find the Broadcast Address';
+                    break;
+                }
+
+                case 'FIND_USABLE_HOSTS': {
+                    // Given a CIDR, how many usable hosts?
+                    const cidrs = [22, 23, 24, 25, 26, 27, 28, 29, 30];
+                    const cidr = cidrs[rand(cidrs.length)];
+                    const hostBits = 32 - cidr;
+                    const usableHosts = Math.pow(2, hostBits) - 2;
+
+                    challenge.cidr = cidr;
+                    challenge.answer = usableHosts.toString();
+                    challenge.text = `Subnet Mask: <span class="highlight">/${cidr}</span><br><br>How many <span class="highlight">usable host addresses</span> are available?`;
+                    challenge.typeLabel = 'Calculate Usable Hosts';
+                    break;
+                }
+
+                case 'FIND_MASK_FOR_SUBNETS': {
+                    // Need X subnets from a /16 or /8, find the mask
+                    const baseNetworks = [
+                        { ip: '10.0.0.0', baseCidr: 8 },
+                        { ip: '172.16.0.0', baseCidr: 16 },
+                        { ip: '192.168.0.0', baseCidr: 16 }
+                    ];
+                    const network = baseNetworks[rand(baseNetworks.length)];
+
+                    const subnetOptions = [2, 4, 8, 16, 32, 64];
+                    const requiredSubnets = subnetOptions[rand(subnetOptions.length)];
+
+                    const bitsNeeded = Math.ceil(Math.log2(requiredSubnets));
+                    const newCidr = network.baseCidr + bitsNeeded;
+
+                    challenge.ip = network.ip;
+                    challenge.baseCidr = network.baseCidr;
+                    challenge.requiredSubnets = requiredSubnets;
+                    challenge.answer = `/${newCidr}`;
+                    challenge.answerDecimal = cidrToDecimal(newCidr);
+                    challenge.text = `Starting Network: <span class="highlight">${network.ip}/${network.baseCidr}</span><br><br>You need to create <span class="highlight">${requiredSubnets} subnets</span>.<br><br>What subnet mask should you use? (e.g., /24 or 255.255.255.0)`;
+                    challenge.typeLabel = 'Find the Subnet Mask';
+                    break;
+                }
+            }
+
+            return challenge;
+        }
+
+        // Convert CIDR to decimal notation
+        function cidrToDecimal(cidr) {
+            const mask = (0xFFFFFFFF << (32 - cidr)) >>> 0;
+            return [
+                (mask >>> 24) & 0xFF,
+                (mask >>> 16) & 0xFF,
+                (mask >>> 8) & 0xFF,
+                mask & 0xFF
+            ].join('.');
+        }
+
+        // Convert decimal to CIDR
+        function decimalToCidr(decimal) {
+            const parts = decimal.split('.').map(Number);
+            if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) {
+                return null;
+            }
+
+            const binary = parts.map(p => p.toString(2).padStart(8, '0')).join('');
+            const firstZero = binary.indexOf('0');
+
+            if (firstZero === -1) return 32;
+
+            // Validate it's a valid subnet mask (all 1s then all 0s)
+            if (binary.substring(firstZero).includes('1')) {
+                return null;
+            }
+
+            return firstZero;
+        }
+
+        // Normalize answer input
+        function normalizeAnswer(input, challenge) {
+            input = input.trim();
+
+            // For host count answers
+            if (challenge.type === 'FIND_USABLE_HOSTS') {
+                return input.replace(/,/g, '');
+            }
+
+            // For subnet mask answers
+            if (challenge.type === 'FIND_MASK_FOR_HOSTS' || challenge.type === 'FIND_MASK_FOR_SUBNETS') {
+                // Handle CIDR notation
+                if (input.startsWith('/')) {
+                    return input;
+                }
+                // Handle just a number
+                if (/^\d{1,2}$/.test(input)) {
+                    return `/${input}`;
+                }
+                // Handle decimal notation - convert to CIDR
+                if (input.includes('.')) {
+                    const cidr = decimalToCidr(input);
+                    if (cidr !== null) {
+                        return `/${cidr}`;
+                    }
+                }
+                return input;
+            }
+
+            // For IP address answers
+            return input;
+        }
+
+        // Check if answer is correct
+        function checkAnswer(input, challenge) {
+            const normalized = normalizeAnswer(input, challenge);
+
+            if (challenge.type === 'FIND_MASK_FOR_HOSTS' || challenge.type === 'FIND_MASK_FOR_SUBNETS') {
+                return normalized === challenge.answer;
+            }
+
+            return normalized === challenge.answer;
+        }
+
+        // Generate hint for wrong answer
+        function generateHint(input, challenge) {
+            const normalized = normalizeAnswer(input, challenge);
+
+            if (challenge.type === 'FIND_MASK_FOR_HOSTS') {
+                if (normalized.startsWith('/')) {
+                    const guessedCidr = parseInt(normalized.substring(1));
+                    const correctCidr = parseInt(challenge.answer.substring(1));
+
+                    if (isNaN(guessedCidr) || guessedCidr < 0 || guessedCidr > 32) {
+                        return { hint: 'Invalid CIDR notation', status: 'wrong' };
+                    }
+
+                    const guessedHosts = Math.pow(2, 32 - guessedCidr) - 2;
+
+                    if (guessedCidr < correctCidr) {
+                        const diff = correctCidr - guessedCidr;
+                        if (diff === 1) {
+                            return { hint: `${guessedHosts} hosts - too many, but close!`, status: 'close' };
+                        }
+                        return { hint: `${guessedHosts} hosts - way too many`, status: 'wrong' };
+                    } else {
+                        const diff = guessedCidr - correctCidr;
+                        if (diff === 1) {
+                            return { hint: `${guessedHosts} hosts - not enough, but close!`, status: 'close' };
+                        }
+                        return { hint: `${guessedHosts} hosts - not enough`, status: 'wrong' };
+                    }
+                }
+                return { hint: 'Enter a subnet mask (e.g., /24 or 255.255.255.0)', status: 'wrong' };
+            }
+
+            if (challenge.type === 'FIND_MASK_FOR_SUBNETS') {
+                if (normalized.startsWith('/')) {
+                    const guessedCidr = parseInt(normalized.substring(1));
+                    const correctCidr = parseInt(challenge.answer.substring(1));
+
+                    if (isNaN(guessedCidr) || guessedCidr < 0 || guessedCidr > 32) {
+                        return { hint: 'Invalid CIDR notation', status: 'wrong' };
+                    }
+
+                    const guessedSubnets = Math.pow(2, guessedCidr - challenge.baseCidr);
+
+                    if (guessedCidr < correctCidr) {
+                        const diff = correctCidr - guessedCidr;
+                        if (diff === 1) {
+                            return { hint: `${guessedSubnets} subnets - not enough, but close!`, status: 'close' };
+                        }
+                        return { hint: `${guessedSubnets} subnets - not enough`, status: 'wrong' };
+                    } else {
+                        const diff = guessedCidr - correctCidr;
+                        if (diff === 1) {
+                            return { hint: `${guessedSubnets} subnets - more than needed, but close!`, status: 'close' };
+                        }
+                        return { hint: `${guessedSubnets} subnets - too many (wasting addresses)`, status: 'wrong' };
+                    }
+                }
+                return { hint: 'Enter a subnet mask (e.g., /24 or 255.255.255.0)', status: 'wrong' };
+            }
+
+            if (challenge.type === 'FIND_NETWORK_ADDRESS' || challenge.type === 'FIND_BROADCAST_ADDRESS') {
+                const parts = normalized.split('.');
+                const answerParts = challenge.answer.split('.');
+
+                if (parts.length !== 4) {
+                    return { hint: 'Enter a valid IP address', status: 'wrong' };
+                }
+
+                let matching = 0;
+                for (let i = 0; i < 4; i++) {
+                    if (parts[i] === answerParts[i]) matching++;
+                }
+
+                if (matching === 3) {
+                    return { hint: `${matching}/4 octets correct - so close!`, status: 'close' };
+                } else if (matching >= 2) {
+                    return { hint: `${matching}/4 octets correct`, status: 'close' };
+                }
+                return { hint: `${matching}/4 octets correct`, status: 'wrong' };
+            }
+
+            if (challenge.type === 'FIND_USABLE_HOSTS') {
+                const guessed = parseInt(normalized);
+                const correct = parseInt(challenge.answer);
+
+                if (isNaN(guessed)) {
+                    return { hint: 'Enter a number', status: 'wrong' };
+                }
+
+                const diff = Math.abs(guessed - correct);
+                const percentDiff = diff / correct;
+
+                if (percentDiff <= 0.1) {
+                    return { hint: guessed > correct ? 'Slightly too high' : 'Slightly too low', status: 'close' };
+                } else if (percentDiff <= 0.5) {
+                    return { hint: guessed > correct ? 'Too high' : 'Too low', status: 'wrong' };
+                }
+                return { hint: guessed > correct ? 'Way too high' : 'Way too low', status: 'wrong' };
+            }
+
+            return { hint: 'Incorrect', status: 'wrong' };
+        }
+
+        // Game state
+        let gameState = {
+            challenge: null,
+            guesses: [],
+            gameOver: false,
+            won: false
+        };
+
+        // Stats
+        let stats = {
+            played: 0,
+            won: 0,
+            currentStreak: 0,
+            maxStreak: 0,
+            guessDistribution: [0, 0, 0, 0, 0, 0]
+        };
+
+        // Load state from localStorage
+        function loadState() {
+            const savedStats = localStorage.getItem('subnetle_stats');
+            if (savedStats) {
+                stats = JSON.parse(savedStats);
+            }
+
+            const savedGame = localStorage.getItem('subnetle_game');
+            const todaySeed = getTodaySeed();
+
+            if (savedGame) {
+                const saved = JSON.parse(savedGame);
+                if (saved.seed === todaySeed) {
+                    gameState = saved;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            gameState.seed = getTodaySeed();
+            localStorage.setItem('subnetle_game', JSON.stringify(gameState));
+            localStorage.setItem('subnetle_stats', JSON.stringify(stats));
+        }
+
+        // Initialize game
+        function initGame() {
+            const hasExistingGame = loadState();
+
+            if (!hasExistingGame) {
+                const seed = getTodaySeed();
+                gameState = {
+                    challenge: generateChallenge(seed),
+                    guesses: [],
+                    gameOver: false,
+                    won: false,
+                    seed: seed
+                };
+            }
+
+            renderChallenge();
+            renderGuesses();
+            updateAttemptsDisplay();
+            updateCountdown();
+
+            if (gameState.gameOver) {
+                document.getElementById('guessInput').disabled = true;
+                document.getElementById('submitBtn').disabled = true;
+            }
+
+            // Set up enter key handler
+            document.getElementById('guessInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    submitGuess();
+                }
+            });
+
+            // Update countdown every second
+            setInterval(updateCountdown, 1000);
+        }
+
+        // Render challenge
+        function renderChallenge() {
+            document.getElementById('challengeType').textContent = gameState.challenge.typeLabel;
+            document.getElementById('challengeText').innerHTML = gameState.challenge.text;
+        }
+
+        // Render guesses
+        function renderGuesses() {
+            const container = document.getElementById('guessesList');
+            container.innerHTML = '';
+
+            gameState.guesses.forEach(guess => {
+                const row = document.createElement('div');
+                row.className = `guess-row ${guess.status}`;
+                row.innerHTML = `
+                    <span class="guess-value">${guess.value}</span>
+                    <span class="guess-hint">${guess.hint}</span>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // Update attempts display
+        function updateAttemptsDisplay() {
+            const remaining = MAX_ATTEMPTS - gameState.guesses.length;
+            document.getElementById('attemptsLeft').textContent =
+                `${remaining} attempt${remaining !== 1 ? 's' : ''} remaining`;
+        }
+
+        // Submit guess
+        function submitGuess() {
+            if (gameState.gameOver) return;
+
+            const input = document.getElementById('guessInput');
+            const guess = input.value.trim();
+
+            if (!guess) return;
+
+            const isCorrect = checkAnswer(guess, gameState.challenge);
+
+            let guessRecord;
+            if (isCorrect) {
+                guessRecord = {
+                    value: guess,
+                    hint: 'Correct!',
+                    status: 'correct'
+                };
+                gameState.won = true;
+                gameState.gameOver = true;
+            } else {
+                const result = generateHint(guess, gameState.challenge);
+                guessRecord = {
+                    value: guess,
+                    hint: result.hint,
+                    status: result.status
+                };
+            }
+
+            gameState.guesses.push(guessRecord);
+
+            if (gameState.guesses.length >= MAX_ATTEMPTS && !gameState.won) {
+                gameState.gameOver = true;
+            }
+
+            saveState();
+            renderGuesses();
+            updateAttemptsDisplay();
+
+            input.value = '';
+
+            if (gameState.gameOver) {
+                input.disabled = true;
+                document.getElementById('submitBtn').disabled = true;
+
+                // Update stats
+                stats.played++;
+                if (gameState.won) {
+                    stats.won++;
+                    stats.currentStreak++;
+                    stats.maxStreak = Math.max(stats.maxStreak, stats.currentStreak);
+                    stats.guessDistribution[gameState.guesses.length - 1]++;
+                } else {
+                    stats.currentStreak = 0;
+                }
+                saveState();
+
+                setTimeout(showResult, 500);
+            }
+        }
+
+        // Show result modal
+        function showResult() {
+            const modal = document.getElementById('resultModal');
+            const title = document.getElementById('resultTitle');
+            const message = document.getElementById('resultMessage');
+            const answer = document.getElementById('resultAnswer');
+            const statsDisplay = document.getElementById('statsDisplay');
+            const shareText = document.getElementById('shareText');
+
+            if (gameState.won) {
+                title.textContent = 'Excellent!';
+                title.className = 'result-title win';
+                message.textContent = `You solved it in ${gameState.guesses.length} ${gameState.guesses.length === 1 ? 'guess' : 'guesses'}!`;
+            } else {
+                title.textContent = 'Not Today';
+                title.className = 'result-title lose';
+                message.textContent = "You'll get it next time!";
+            }
+
+            const challenge = gameState.challenge;
+            let answerText = `Answer: ${challenge.answer}`;
+            if (challenge.answerDecimal) {
+                answerText += ` (${challenge.answerDecimal})`;
+            }
+            answer.textContent = answerText;
+
+            // Stats
+            const winRate = stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0;
+            statsDisplay.innerHTML = `
+                <div class="stat">
+                    <div class="stat-value">${stats.played}</div>
+                    <div class="stat-label">Played</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${winRate}%</div>
+                    <div class="stat-label">Win Rate</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${stats.currentStreak}</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${stats.maxStreak}</div>
+                    <div class="stat-label">Max Streak</div>
+                </div>
+            `;
+
+            // Share text
+            const emojis = gameState.guesses.map(g => {
+                if (g.status === 'correct') return '🟩';
+                if (g.status === 'close') return '🟨';
+                return '🟥';
+            }).join('');
+
+            const today = new Date();
+            const dateStr = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
+
+            shareText.textContent = `SubnetLE ${dateStr}\n${gameState.won ? gameState.guesses.length : 'X'}/${MAX_ATTEMPTS}\n\n${emojis}`;
+
+            modal.classList.add('show');
+        }
+
+        // Copy share text
+        function copyShare() {
+            const shareText = document.getElementById('shareText').textContent;
+            navigator.clipboard.writeText(shareText).then(() => {
+                const btn = document.querySelector('.btn-share');
+                btn.textContent = 'Copied!';
+                setTimeout(() => {
+                    btn.textContent = 'Copy Results';
+                }, 2000);
+            });
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('resultModal').classList.remove('show');
+        }
+
+        // Update countdown to next puzzle
+        function updateCountdown() {
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+
+            const diff = tomorrow - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('countdown').innerHTML =
+                `Next challenge in: <span>${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}</span>`;
+        }
+
+        // Initialize on load
+        window.onload = initGame;
+    </script>
+</body>
+</html>
