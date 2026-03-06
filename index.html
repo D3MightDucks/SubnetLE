@@ -456,6 +456,43 @@
             margin-left: 10px;
         }
 
+        .champion-banner {
+            display: none;
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #1a1a2e;
+        }
+
+        .champion-banner.show {
+            display: block;
+        }
+
+        .champion-banner .trophy {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .champion-banner .title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .champion-banner .name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .champion-banner .stats {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
         @media (max-width: 500px) {
             h1 {
                 font-size: 2rem;
@@ -477,6 +514,13 @@
             <h1>SubnetLE</h1>
             <p class="subtitle">Daily CCNA Subnetting Challenge</p>
         </header>
+
+        <div class="champion-banner" id="championBanner">
+            <div class="trophy">🏆</div>
+            <div class="title">Last Month's Champion</div>
+            <div class="name" id="championName">-</div>
+            <div class="stats" id="championStats">-</div>
+        </div>
 
         <div class="user-display" id="userDisplay" style="display: none;">
             Playing as: <span id="currentNickname"></span>
@@ -522,6 +566,7 @@
             <div class="leaderboard-header">Leaderboard</div>
             <div class="leaderboard-tabs">
                 <button class="leaderboard-tab active" id="tabToday" onclick="switchLeaderboard('today')">Today</button>
+                <button class="leaderboard-tab" id="tabMonth" onclick="switchLeaderboard('month')">This Month</button>
                 <button class="leaderboard-tab" id="tabAllTime" onclick="switchLeaderboard('alltime')">All Time</button>
             </div>
             <div class="leaderboard-content" id="leaderboardContent">
@@ -629,13 +674,32 @@
         // Leaderboard functions
         let currentLeaderboardView = 'today';
 
+        function getMonthKey(date) {
+            return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+        }
+
+        function getLastMonthKey() {
+            const now = new Date();
+            now.setMonth(now.getMonth() - 1);
+            return getMonthKey(now);
+        }
+
+        function getLastMonthName() {
+            const now = new Date();
+            now.setMonth(now.getMonth() - 1);
+            return now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        }
+
         function switchLeaderboard(view) {
             currentLeaderboardView = view;
             document.getElementById('tabToday').classList.toggle('active', view === 'today');
+            document.getElementById('tabMonth').classList.toggle('active', view === 'month');
             document.getElementById('tabAllTime').classList.toggle('active', view === 'alltime');
 
             if (view === 'today') {
                 loadTodayLeaderboard();
+            } else if (view === 'month') {
+                loadMonthlyLeaderboard();
             } else {
                 loadAllTimeLeaderboard();
             }
@@ -644,9 +708,12 @@
         function loadLeaderboard() {
             if (currentLeaderboardView === 'today') {
                 loadTodayLeaderboard();
+            } else if (currentLeaderboardView === 'month') {
+                loadMonthlyLeaderboard();
             } else {
                 loadAllTimeLeaderboard();
             }
+            loadLastMonthChampion();
         }
 
         function loadTodayLeaderboard() {
@@ -746,6 +813,95 @@
             });
         }
 
+        function loadMonthlyLeaderboard() {
+            const monthKey = getMonthKey(new Date());
+            const monthRef = db.ref('monthly/' + monthKey);
+
+            monthRef.once('value').then(snapshot => {
+                const content = document.getElementById('leaderboardContent');
+
+                if (!snapshot.exists()) {
+                    content.innerHTML = '<div class="leaderboard-empty">No completions yet this month. Be the first!</div>';
+                    return;
+                }
+
+                const entries = [];
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    entries.push({
+                        nickname: data.nickname || child.key,
+                        wins: data.wins || 0,
+                        played: data.played || 0,
+                        winRate: data.played > 0 ? Math.round((data.wins / data.played) * 100) : 0
+                    });
+                });
+
+                // Sort by wins, then by win rate
+                entries.sort((a, b) => {
+                    if (b.wins !== a.wins) return b.wins - a.wins;
+                    return b.winRate - a.winRate;
+                });
+
+                if (entries.length === 0) {
+                    content.innerHTML = '<div class="leaderboard-empty">No completions yet this month. Be the first!</div>';
+                    return;
+                }
+
+                content.innerHTML = entries.map((entry, index) => {
+                    const isCurrentUser = entry.nickname === currentNickname;
+                    const medal = index === 0 ? '🥇 ' : index === 1 ? '🥈 ' : index === 2 ? '🥉 ' : '';
+                    return `
+                        <div class="leaderboard-entry ${isCurrentUser ? 'current-user' : ''}">
+                            <span class="name">${medal}${entry.nickname}</span>
+                            <span class="score">${entry.wins}W / ${entry.played} | ${entry.winRate}%</span>
+                        </div>
+                    `;
+                }).join('');
+            });
+        }
+
+        function loadLastMonthChampion() {
+            const lastMonthKey = getLastMonthKey();
+            const monthRef = db.ref('monthly/' + lastMonthKey);
+
+            monthRef.once('value').then(snapshot => {
+                const banner = document.getElementById('championBanner');
+
+                if (!snapshot.exists()) {
+                    banner.classList.remove('show');
+                    return;
+                }
+
+                const entries = [];
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    entries.push({
+                        nickname: data.nickname || child.key,
+                        wins: data.wins || 0,
+                        played: data.played || 0,
+                        winRate: data.played > 0 ? Math.round((data.wins / data.played) * 100) : 0
+                    });
+                });
+
+                if (entries.length === 0) {
+                    banner.classList.remove('show');
+                    return;
+                }
+
+                // Sort by wins, then by win rate
+                entries.sort((a, b) => {
+                    if (b.wins !== a.wins) return b.wins - a.wins;
+                    return b.winRate - a.winRate;
+                });
+
+                const champion = entries[0];
+                document.getElementById('championName').textContent = champion.nickname;
+                document.getElementById('championStats').textContent =
+                    `${champion.wins} wins in ${getLastMonthName()} (${champion.winRate}% win rate)`;
+                banner.classList.add('show');
+            });
+        }
+
         function submitScoreToFirebase() {
             if (!currentNickname) return;
 
@@ -782,6 +938,25 @@
                 userData.nickname = currentNickname;
 
                 userRef.set(userData);
+            });
+
+            // Update monthly stats
+            const monthKey = getMonthKey(new Date());
+            const monthRef = db.ref('monthly/' + monthKey + '/' + sanitizedNickname);
+            monthRef.once('value').then(snapshot => {
+                const monthData = snapshot.val() || {
+                    wins: 0,
+                    played: 0
+                };
+
+                monthData.played++;
+                if (gameState.won) {
+                    monthData.wins++;
+                }
+                monthData.nickname = currentNickname;
+                monthData.lastUpdated = Date.now();
+
+                monthRef.set(monthData);
             });
 
             // Refresh leaderboard
