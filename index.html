@@ -372,27 +372,39 @@
             margin-top: 20px;
         }
 
-        .leaderboard-section h3 {
+        .leaderboard-header {
             color: #00d4ff;
             margin-bottom: 15px;
             font-size: 1rem;
+        }
+
+        .leaderboard-tabs {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .leaderboard-tab {
+            flex: 1;
+            padding: 10px;
+            font-size: 0.85rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #888;
             cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .leaderboard-section h3:after {
-            content: '▼';
-            font-size: 0.7rem;
+        .leaderboard-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
 
-        .leaderboard-section.collapsed h3:after {
-            content: '▶';
-        }
-
-        .leaderboard-section.collapsed .leaderboard-content {
-            display: none;
+        .leaderboard-tab.active {
+            background: #00d4ff;
+            color: #1a1a2e;
+            border-color: #00d4ff;
+            font-weight: bold;
         }
 
         .leaderboard-entry {
@@ -507,7 +519,11 @@
         <div class="countdown" id="countdown"></div>
 
         <div class="leaderboard-section" id="leaderboardSection">
-            <h3 onclick="toggleLeaderboard()">Today's Leaderboard</h3>
+            <div class="leaderboard-header">Leaderboard</div>
+            <div class="leaderboard-tabs">
+                <button class="leaderboard-tab active" id="tabToday" onclick="switchLeaderboard('today')">Today</button>
+                <button class="leaderboard-tab" id="tabAllTime" onclick="switchLeaderboard('alltime')">All Time</button>
+            </div>
             <div class="leaderboard-content" id="leaderboardContent">
                 <div class="leaderboard-empty">Loading...</div>
             </div>
@@ -611,11 +627,29 @@
         }
 
         // Leaderboard functions
-        function toggleLeaderboard() {
-            document.getElementById('leaderboardSection').classList.toggle('collapsed');
+        let currentLeaderboardView = 'today';
+
+        function switchLeaderboard(view) {
+            currentLeaderboardView = view;
+            document.getElementById('tabToday').classList.toggle('active', view === 'today');
+            document.getElementById('tabAllTime').classList.toggle('active', view === 'alltime');
+
+            if (view === 'today') {
+                loadTodayLeaderboard();
+            } else {
+                loadAllTimeLeaderboard();
+            }
         }
 
         function loadLeaderboard() {
+            if (currentLeaderboardView === 'today') {
+                loadTodayLeaderboard();
+            } else {
+                loadAllTimeLeaderboard();
+            }
+        }
+
+        function loadTodayLeaderboard() {
             const today = getTodaySeed().toString();
             const leaderboardRef = db.ref('daily/' + today);
 
@@ -657,6 +691,55 @@
                         <div class="leaderboard-entry ${isCurrentUser ? 'current-user' : ''}">
                             <span class="name">${medal}${entry.nickname}</span>
                             <span class="score">${entry.attempts}/6</span>
+                        </div>
+                    `;
+                }).join('');
+            });
+        }
+
+        function loadAllTimeLeaderboard() {
+            const usersRef = db.ref('users');
+
+            usersRef.once('value').then(snapshot => {
+                const content = document.getElementById('leaderboardContent');
+
+                if (!snapshot.exists()) {
+                    content.innerHTML = '<div class="leaderboard-empty">No players yet. Be the first!</div>';
+                    return;
+                }
+
+                const entries = [];
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data.totalPlayed > 0) {
+                        entries.push({
+                            nickname: data.nickname || child.key,
+                            totalWon: data.totalWon || 0,
+                            totalPlayed: data.totalPlayed || 0,
+                            maxStreak: data.maxStreak || 0,
+                            winRate: data.totalPlayed > 0 ? Math.round((data.totalWon / data.totalPlayed) * 100) : 0
+                        });
+                    }
+                });
+
+                // Sort by total wins, then by win rate
+                entries.sort((a, b) => {
+                    if (b.totalWon !== a.totalWon) return b.totalWon - a.totalWon;
+                    return b.winRate - a.winRate;
+                });
+
+                if (entries.length === 0) {
+                    content.innerHTML = '<div class="leaderboard-empty">No players yet. Be the first!</div>';
+                    return;
+                }
+
+                content.innerHTML = entries.map((entry, index) => {
+                    const isCurrentUser = entry.nickname === currentNickname;
+                    const medal = index === 0 ? '🥇 ' : index === 1 ? '🥈 ' : index === 2 ? '🥉 ' : '';
+                    return `
+                        <div class="leaderboard-entry ${isCurrentUser ? 'current-user' : ''}">
+                            <span class="name">${medal}${entry.nickname}</span>
+                            <span class="score">${entry.totalWon}W | ${entry.winRate}% | 🔥${entry.maxStreak}</span>
                         </div>
                     `;
                 }).join('');
