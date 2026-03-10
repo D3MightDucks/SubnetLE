@@ -506,6 +506,53 @@
                 width: 100%;
             }
         }
+
+        .admin-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+
+        .admin-toggle {
+            color: #555;
+            font-size: 0.75rem;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .admin-toggle:hover {
+            color: #888;
+        }
+
+        .admin-panel {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff5252;
+            border-radius: 8px;
+        }
+
+        .admin-panel.show {
+            display: block;
+        }
+
+        .admin-panel h4 {
+            color: #ff5252;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .admin-panel button {
+            background: #ff5252;
+            padding: 8px 15px;
+            font-size: 0.8rem;
+            margin: 5px 5px 5px 0;
+        }
+
+        .admin-panel button:hover:not(:disabled) {
+            background: #ff3333;
+        }
     </style>
 </head>
 <body>
@@ -571,6 +618,17 @@
             </div>
             <div class="leaderboard-content" id="leaderboardContent">
                 <div class="leaderboard-empty">Loading...</div>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <div class="admin-toggle" onclick="toggleAdmin()">Admin</div>
+            <div class="admin-panel" id="adminPanel">
+                <h4>Clear Leaderboard Data (Testing)</h4>
+                <button onclick="clearToday()">Clear Today</button>
+                <button onclick="clearMonth()">Clear This Month</button>
+                <button onclick="clearAllTime()">Clear All Time</button>
+                <button onclick="clearAll()">Clear Everything</button>
             </div>
         </div>
     </div>
@@ -1593,6 +1651,51 @@
 
             document.getElementById('countdown').innerHTML =
                 `Next challenge in: <span>${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}</span>`;
+        }
+
+        // Admin functions
+        function toggleAdmin() {
+            document.getElementById('adminPanel').classList.toggle('show');
+        }
+
+        function clearToday() {
+            if (!confirm('Clear today\'s leaderboard? This cannot be undone.')) return;
+            const today = getTodaySeed().toString();
+            db.ref('daily/' + today).remove().then(() => {
+                alert('Today\'s data cleared!');
+                loadLeaderboard();
+            });
+        }
+
+        function clearMonth() {
+            if (!confirm('Clear this month\'s leaderboard? This cannot be undone.')) return;
+            const monthKey = getMonthKey(new Date());
+            db.ref('monthly/' + monthKey).remove().then(() => {
+                alert('This month\'s data cleared!');
+                loadLeaderboard();
+            });
+        }
+
+        function clearAllTime() {
+            if (!confirm('Clear ALL user stats? This cannot be undone.')) return;
+            db.ref('users').remove().then(() => {
+                alert('All user stats cleared!');
+                loadLeaderboard();
+            });
+        }
+
+        function clearAll() {
+            if (!confirm('Clear ALL data (today, all months, all users)? This cannot be undone.')) return;
+            if (!confirm('Are you REALLY sure? This deletes everything!')) return;
+            Promise.all([
+                db.ref('daily').remove(),
+                db.ref('monthly').remove(),
+                db.ref('users').remove()
+            ]).then(() => {
+                alert('All data cleared!');
+                loadLeaderboard();
+                document.getElementById('championBanner').classList.remove('show');
+            });
         }
 
         // Initialize on load
